@@ -24,4 +24,8 @@ public protocol OfflineTaskProtocol: NSObjectProtocol, NSCoding {
     
     /* 0 infinity */
     var maxAttemptsExecuteTask: Int { get }
+    var executedCount: Int { get }
+    
+    func incrementExecuteCount() -> Void
 }
+

@@ -39,6 +39,7 @@ public class OfflineTaskQueue {
             let tasksToExecute = self.tasksFor(executeOptions: observer.executeOptions)
             guard !tasksToExecute.isEmpty else { return }
             self.notifyObservers([observer], aboutTasks: tasksToExecute)
+            self.saveTasksQueue()
         }
     }
     
@@ -54,18 +55,18 @@ public class OfflineTaskQueue {
     
     public func addTask(_ task: OfflineTaskProtocol) {
         queue.async(flags: .barrier) {
-            self.tasksQueue.append(task)
             let observersToNotify = self.observersFor(executeOptions: task.executeOptions)
             self.notifyObservers(observersToNotify, aboutTasks: [task])
+            if !(observersToNotify.count != 0 && task.maxAttemptsExecuteTask == 1) {
+                self.tasksQueue.append(task)
+            }
         }
     }
     
     //MARK: - Accessors
     
     public var countActiveTasks: Int {
-        var count: Int = 0
-        queue.sync { count = self.tasksQueue.count }
-        return count
+        return activeTasks.count
     }
     
     public var activeTasks: [OfflineTaskProtocol] {
@@ -87,7 +88,8 @@ fileprivate extension OfflineTaskQueue {
         if let data = UserDefaults.standard.value(forKey: UserDefaultsKey) as? Data,
             let tasksQueue = NSKeyedUnarchiver.unarchiveObject(with: data) as? [OfflineTaskProtocol] {
             print("Tasks recovered: \(tasksQueue.count)")
-            self.tasksQueue = tasksQueue
+            self.tasksQueue = removeExpiredTasksFrom(tasks: tasksQueue)
+            print("Tasks recovered after removing expired: \(self.tasksQueue.count)")
         }
     }
 }
@@ -96,7 +98,10 @@ fileprivate extension OfflineTaskQueue {
 
 fileprivate extension OfflineTaskQueue {
     func notifyObservers(_ observers: [OfflineTaskProtocolObserver], aboutTasks: [OfflineTaskProtocol]) {
-        observers.forEach { $0.taskQueue(self, updatedTasks: aboutTasks) }
+        observers.forEach {
+            $0.taskQueue(self, updatedTasks: aboutTasks)
+            self.incrementExecuteCountFor(tasks: aboutTasks)
+        }
     }
     
     func observersFor(executeOptions: [TaskExecuteOption]) -> [OfflineTaskProtocolObserver] {
@@ -106,4 +111,13 @@ fileprivate extension OfflineTaskQueue {
     func tasksFor(executeOptions: [TaskExecuteOption]) -> [OfflineTaskProtocol] {
         return tasksQueue.filter { $0.executeOptions.filter(executeOptions.contains).count > 0 }
     }
+    
+    func incrementExecuteCountFor(tasks: [OfflineTaskProtocol]) {
+        tasks.forEach { $0.incrementExecuteCount() }
+    }
+    
+    func removeExpiredTasksFrom(tasks: [OfflineTaskProtocol]) -> [OfflineTaskProtocol] {
+        return tasks.filter { $0.executedCount != $0.maxAttemptsExecuteTask }
+    }
 }
+
