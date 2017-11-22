@@ -20,11 +20,8 @@ public protocol OfflineTaskProtocol: NSObjectProtocol, NSCoding {
     var type: String? { get }
     var status: OfflineTaskStatus { get }
     var executeOptions: [TaskExecuteOption] { get }
-    
     var object: NSCoding { get }
     
-    /* Implement in future */
-    // var maxAttamptsExecuteTask: Int = 0 // 0 infinity
-    // var replaceTasksWithSameType: Bool = false
-    
+    /* 0 infinity */
+    var maxAttemptsExecuteTask: Int { get }
 }

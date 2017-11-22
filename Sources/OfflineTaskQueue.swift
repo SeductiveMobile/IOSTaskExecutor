@@ -19,15 +19,11 @@ public class OfflineTaskQueue {
     
     private static weak var weakInstance: OfflineTaskQueue?
     
-    static var manager: OfflineTaskQueue {
+    public static var manager: OfflineTaskQueue {
         get {
-            if let instance = weakInstance {
-                return instance
-            } else {
-                let newInstance = OfflineTaskQueue()
-                weakInstance = newInstance
-                return newInstance
-            }
+            let instance = weakInstance ?? OfflineTaskQueue()
+            weakInstance = instance
+            return instance
         }
     }
     
@@ -37,7 +33,7 @@ public class OfflineTaskQueue {
     
     //MARK: - Mutating
     
-    func addObserver(_ observer: OfflineTaskProtocolObserver) {
+    public func addObserver(_ observer: OfflineTaskProtocolObserver) {
         queue.async(flags: .barrier) {
             self.observers.append(observer)
             let tasksToExecute = self.tasksFor(executeOptions: observer.executeOptions)
@@ -46,7 +42,7 @@ public class OfflineTaskQueue {
         }
     }
     
-    func finishTask(_ task: OfflineTaskProtocol) {
+    public func finishTask(_ task: OfflineTaskProtocol) {
         queue.async(flags: .barrier) {
             guard let index = self.tasksQueue.index(where: { $0.identifier == task.identifier }) else {
                 print("Can't find task with \(task.identifier) identifier")
@@ -56,7 +52,7 @@ public class OfflineTaskQueue {
         }
     }
     
-    func addTask(_ task: OfflineTaskProtocol) {
+    public func addTask(_ task: OfflineTaskProtocol) {
         queue.async(flags: .barrier) {
             self.tasksQueue.append(task)
             let observersToNotify = self.observersFor(executeOptions: task.executeOptions)
@@ -66,13 +62,13 @@ public class OfflineTaskQueue {
     
     //MARK: - Accessors
     
-    var countActiveTasks: Int {
+    public var countActiveTasks: Int {
         var count: Int = 0
         queue.sync { count = self.tasksQueue.count }
         return count
     }
     
-    var activeTasks: [OfflineTaskProtocol] {
+    public var activeTasks: [OfflineTaskProtocol] {
         var tasks: [OfflineTaskProtocol] = []
         queue.sync { tasks = self.tasksQueue }
         return tasks
@@ -106,7 +102,7 @@ fileprivate extension OfflineTaskQueue {
     func observersFor(executeOptions: [TaskExecuteOption]) -> [OfflineTaskProtocolObserver] {
         return observers.filter { $0.executeOptions.filter(executeOptions.contains).count > 0 }
     }
-    
+
     func tasksFor(executeOptions: [TaskExecuteOption]) -> [OfflineTaskProtocol] {
         return tasksQueue.filter { $0.executeOptions.filter(executeOptions.contains).count > 0 }
     }
