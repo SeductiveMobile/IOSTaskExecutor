@@ -11,7 +11,7 @@ import UIKit
 
 public class OfflineTaskQueue {
     fileprivate let UserDefaultsKey = "4ier.labs.OfflineTask.UserDefaultsKey"
-    fileprivate let queue = DispatchQueue(label: "4ier.labs.OfflineTask", attributes: .concurrent)
+    fileprivate let queue = DispatchQueue(label: "4ier.labs.OfflineTask")
     fileprivate var tasksQueue: [OfflineTaskProtocol] = [] { didSet { saveTasksQueue() } }
     fileprivate var observers: [OfflineTaskProtocolObserver] = []
     
@@ -98,9 +98,11 @@ fileprivate extension OfflineTaskQueue {
 
 fileprivate extension OfflineTaskQueue {
     func notifyObservers(_ observers: [OfflineTaskProtocolObserver], aboutTasks: [OfflineTaskProtocol]) {
-        observers.forEach {
-            $0.taskQueue(self, updatedTasks: aboutTasks)
-            self.incrementExecuteCountFor(tasks: aboutTasks)
+        DispatchQueue.main.async {
+            observers.forEach {
+                $0.taskQueue(self, updatedTasks: aboutTasks)
+                self.incrementExecuteCountFor(tasks: aboutTasks)
+            }
         }
     }
     
