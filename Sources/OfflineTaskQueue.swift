@@ -119,7 +119,7 @@ fileprivate extension OfflineTaskQueue {
     }
     
     func removeExpiredTasksFrom(tasks: [OfflineTaskProtocol]) -> [OfflineTaskProtocol] {
-        return tasks.filter { $0.executedCount != $0.maxAttemptsExecuteTask }
+        return tasks.filter { $0.executedCount < $0.maxAttemptsExecuteTask || $0.maxAttemptsExecuteTask == 0 }
     }
 }
 
